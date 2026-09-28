@@ -270,7 +270,7 @@ docker exec salt_api python -m app.cli doctor --telegram-id ВАШ_ID
 Пример здорового вывода:
 
 ```
-✓ Пользователь: tg=495414590, аккаунт u495414590
+✓ Пользователь: tg=100200300, аккаунт u100200300
 ✓ Подписка: multi, trial, осталось 2 дн.
 ✓ Ноды под тариф: nl-1
 ✓ Панель отвечает, inbounds: {'vless': ['VLESS_REALITY_nl-1']}

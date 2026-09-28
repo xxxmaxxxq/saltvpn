@@ -29,7 +29,7 @@ def _notification(
         "status": status,
         "paid": status == "succeeded",
         "amount": {"value": "149.00", "currency": "RUB"},
-        "metadata": {"payment_id": str(our_id), "telegram_id": "495414590"} if our_id else {},
+        "metadata": {"payment_id": str(our_id), "telegram_id": "100200300"} if our_id else {},
     }
     return json.dumps({"type": "notification", "event": event, "object": obj}).encode()
 
@@ -230,7 +230,7 @@ async def test_invoice_asks_for_sbp_and_carries_our_id(monkeypatch):
     monkeypatch.setattr(httpx, "AsyncClient", lambda **_kw: _Client())
 
     invoice = await YooKassaProvider().create_invoice(
-        payment_id=42, amount_rub=149, description="VPN NL на 1 мес.", telegram_id=495414590
+        payment_id=42, amount_rub=149, description="VPN NL на 1 мес.", telegram_id=100200300
     )
 
     assert invoice.payment_url.startswith("https://")
