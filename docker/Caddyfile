@@ -1,0 +1,42 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Caddy сам выпускает и продлевает сертификат Let's Encrypt.
+#  {$DOMAIN} подставляется из PUBLIC_BASE_URL в .env
+# ═══════════════════════════════════════════════════════════════════════════
+
+{$DOMAIN} {
+    encode gzip
+
+    # Панель Marzban — на отдельном пути, не на корне:
+    # так её сложнее найти сканерам.
+    handle /dashboard/* {
+        reverse_proxy marzban:8000
+    }
+    handle /api/admin/* {
+        reverse_proxy marzban:8000
+    }
+
+    # Всё остальное обслуживает наш API:
+    # /sub/{token}, /webhook/*, /api/miniapp/*, /app, /health
+    handle {
+        reverse_proxy api:8000 {
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    header {
+        # Базовая защита заголовками
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        -Server
+    }
+
+    log {
+        output file /data/access.log {
+            roll_size 10mb
+            roll_keep 3
+        }
+        # В логи не пишем тело запросов — там могут быть токены подписок
+        format json
+    }
+}

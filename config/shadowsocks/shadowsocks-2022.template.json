@@ -1,0 +1,17 @@
+{
+  "_comment": "Запасной простой протокол. Используется, когда Reality и Hysteria2 недоступны.",
+  "tag": "SS2022_{{NODE_CODE}}",
+  "listen": "0.0.0.0",
+  "port": {{PORT}},
+  "protocol": "shadowsocks",
+  "settings": {
+    "method": "2022-blake3-aes-128-gcm",
+    "password": "{{SS_PASSWORD}}",
+    "network": "tcp,udp",
+    "clients": []
+  },
+  "sniffing": {
+    "enabled": true,
+    "destOverride": ["http", "tls"]
+  }
+}

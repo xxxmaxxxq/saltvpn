@@ -1,0 +1,159 @@
+/* ══════════════════════════════════════════════════════════════════════
+   Mini App — оформление.
+   Цвета берутся из темы Telegram (themeParams), поэтому кабинет выглядит
+   родным и в светлой, и в тёмной теме.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: var(--tg-theme-bg-color, #ffffff);
+  --secondary-bg: var(--tg-theme-secondary-bg-color, #f3f4f6);
+  --text: var(--tg-theme-text-color, #111827);
+  --hint: var(--tg-theme-hint-color, #8b95a1);
+  --link: var(--tg-theme-link-color, #2481cc);
+  --button: var(--tg-theme-button-color, #2481cc);
+  --button-text: var(--tg-theme-button-text-color, #ffffff);
+  --accent: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--secondary-bg);
+  color: var(--text);
+  padding: 16px 16px 32px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hidden { display: none !important; }
+
+/* ── Загрузка ─────────────────────────────────────────────────────── */
+.loader { display: flex; flex-direction: column; align-items: center; padding: 80px 0; gap: 16px; }
+.loader p { color: var(--hint); font-size: 14px; }
+.spinner {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 3px solid var(--hint); border-top-color: transparent;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Карточки ─────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+}
+.card--hero { text-align: center; padding-top: 24px; }
+.card__title { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.card__text { font-size: 14px; color: var(--hint); line-height: 1.5; }
+
+/* ── Кольцо с остатком дней ───────────────────────────────────────── */
+.ring-wrap { position: relative; width: 140px; height: 140px; margin: 0 auto 12px; }
+.ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring__bg, .ring__fg { fill: none; stroke-width: 9; stroke-linecap: round; }
+.ring__bg { stroke: var(--secondary-bg); }
+.ring__fg {
+  stroke: var(--accent);
+  stroke-dasharray: 327;
+  stroke-dashoffset: 327;
+  transition: stroke-dashoffset .8s ease, stroke .3s;
+}
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-days { font-size: 34px; font-weight: 700; line-height: 1; }
+.ring-label { font-size: 13px; color: var(--hint); margin-top: 2px; }
+
+.hero-title { font-size: 19px; font-weight: 600; margin-bottom: 4px; }
+.hero-sub { font-size: 14px; color: var(--hint); }
+
+/* ── Персональный оффер с таймером ────────────────────────────────── */
+.offer {
+  margin-top: 14px; padding: 12px;
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  color: #fff; border-radius: 12px;
+  font-size: 14px; font-weight: 600;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+}
+.offer__timer { font-variant-numeric: tabular-nums; opacity: .9; }
+
+/* ── Кнопки ───────────────────────────────────────────────────────── */
+.btn {
+  width: 100%; border: none; border-radius: 12px;
+  padding: 15px; font-size: 16px; font-weight: 600;
+  cursor: pointer; margin-bottom: 8px;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.985); }
+.btn--primary { background: var(--button); color: var(--button-text); }
+.btn--ghost { background: var(--bg); color: var(--link); }
+
+/* ── Показатели ───────────────────────────────────────────────────── */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+.stat {
+  background: var(--bg); border-radius: 12px; padding: 14px 6px; text-align: center;
+}
+.stat__value { display: block; font-size: 19px; font-weight: 700; }
+.stat__label { font-size: 11px; color: var(--hint); }
+
+/* ── Прогресс серии ───────────────────────────────────────────────── */
+.progress {
+  height: 8px; background: var(--secondary-bg);
+  border-radius: 4px; overflow: hidden; margin-top: 10px;
+}
+.progress__fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  transition: width .6s ease;
+}
+
+/* ── Сетка действий ───────────────────────────────────────────────── */
+.actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+.action {
+  background: var(--bg); border: none; border-radius: 12px;
+  padding: 16px 10px; font-size: 14px; color: var(--text);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer;
+}
+.action:active { transform: scale(.98); }
+.action__icon { font-size: 22px; }
+
+/* ── Тарифы ───────────────────────────────────────────────────────── */
+.tariff { border: 1px solid var(--secondary-bg); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.tariff__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.tariff__title { font-weight: 600; font-size: 15px; }
+.tariff__desc { font-size: 12px; color: var(--hint); margin-bottom: 10px; }
+.periods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.period {
+  background: var(--secondary-bg); border: none; border-radius: 10px;
+  padding: 10px 6px; font-size: 13px; color: var(--text); cursor: pointer; text-align: center;
+}
+.period b { display: block; font-size: 15px; }
+.period small { color: var(--accent); font-size: 11px; }
+
+/* ── Рефералы и заморозка ─────────────────────────────────────────── */
+.ref-link {
+  background: var(--secondary-bg); border-radius: 10px; padding: 12px;
+  font-size: 12px; word-break: break-all; margin: 10px 0; font-family: ui-monospace, monospace;
+}
+.pause-options { display: flex; gap: 8px; margin-top: 12px; }
+.chip {
+  flex: 1; background: var(--secondary-bg); border: none; border-radius: 10px;
+  padding: 12px 4px; font-size: 14px; color: var(--text); cursor: pointer;
+}
+
+.footer-note { text-align: center; font-size: 12px; color: var(--hint); margin-top: 16px; }
+
+/* ── Тост ─────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; left: 16px; right: 16px; bottom: 20px;
+  background: rgba(17, 24, 39, .94); color: #fff;
+  padding: 14px 16px; border-radius: 12px; font-size: 14px; text-align: center;
+  animation: rise .25s ease;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }

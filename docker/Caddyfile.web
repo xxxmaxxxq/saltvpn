@@ -1,0 +1,27 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Caddy для связки «бот + сайт подписки».
+#  Сертификат Let's Encrypt выпускается и продлевается автоматически.
+#  {$DOMAIN} подставляется из PUBLIC_BASE_URL в .env
+# ═══════════════════════════════════════════════════════════════════════════
+
+{$DOMAIN} {
+    encode gzip
+
+    reverse_proxy api:8000 {
+        header_up X-Real-IP {remote_host}
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options "nosniff"
+        -Server
+    }
+
+    log {
+        output file /data/access.log {
+            roll_size 10mb
+            roll_keep 3
+        }
+        format json
+    }
+}

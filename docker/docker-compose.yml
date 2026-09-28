@@ -1,0 +1,132 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Мастер-сервер целиком: база, кэш, API, бот, воркеры, панель, HTTPS.
+#  Запуск:  make up     (то же самое, что docker compose ... up -d)
+#
+#  ВАЖНО: порты Postgres и Redis наружу НЕ пробрасываются — доступ к ним
+#  есть только у контейнеров внутри сети. Это осознанное решение.
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vpn_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [vpn_net]
+
+  redis:
+    image: redis:7-alpine
+    container_name: vpn_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [vpn_net]
+
+  # ── Панель управления Xray ──────────────────────────────────────────────
+  marzban:
+    image: gozargah/marzban:latest
+    container_name: vpn_marzban
+    restart: unless-stopped
+    environment:
+      SUDO_USERNAME: ${MARZBAN_USERNAME}
+      SUDO_PASSWORD: ${MARZBAN_PASSWORD}
+      UVICORN_HOST: 0.0.0.0
+      UVICORN_PORT: 8000
+      XRAY_SUBSCRIPTION_URL_PREFIX: ${MARZBAN_SUBSCRIPTION_URL}
+      SQLALCHEMY_DATABASE_URL: sqlite:////var/lib/marzban/db.sqlite3
+    volumes:
+      - marzban_data:/var/lib/marzban
+      - ../config/xray-vless:/var/lib/marzban/templates:ro
+    networks: [vpn_net]
+
+  # ── Наш API: вебхуки, подписки, Mini App ────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: vpn_api
+    restart: unless-stopped
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks: [vpn_net]
+
+  # ── Telegram-бот ────────────────────────────────────────────────────────
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: vpn_bot
+    restart: unless-stopped
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: python -m app.bot.main
+    networks: [vpn_net]
+
+  # ── Воркеры: уведомления и Auto-Healing ─────────────────────────────────
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: vpn_worker
+    restart: unless-stopped
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: python -m app.workers.main
+    networks: [vpn_net]
+
+  # ── HTTPS и маршрутизация ───────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    container_name: vpn_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${PUBLIC_BASE_URL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api, marzban]
+    networks: [vpn_net]
+
+volumes:
+  pgdata:
+  redisdata:
+  marzban_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  vpn_net:
+    driver: bridge

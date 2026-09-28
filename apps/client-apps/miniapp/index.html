@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Личный кабинет</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <!-- Пока грузятся данные, показываем скелет: пустой экран выглядит как поломка -->
+  <div id="loader" class="loader">
+    <div class="spinner"></div>
+    <p>Загружаем ваш кабинет…</p>
+  </div>
+
+  <main id="app" class="app hidden">
+    <!-- ── Статус подписки ─────────────────────────────────────────── -->
+    <section class="card card--hero">
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 120 120">
+          <circle class="ring__bg" cx="60" cy="60" r="52"></circle>
+          <circle id="ring-progress" class="ring__fg" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="ring-center">
+          <span id="days-left" class="ring-days">—</span>
+          <span class="ring-label">дней</span>
+        </div>
+      </div>
+      <h1 id="tariff-title" class="hero-title">—</h1>
+      <p id="status-line" class="hero-sub">—</p>
+      <div id="offer-banner" class="offer hidden">
+        <span id="offer-text"></span>
+        <span id="offer-timer" class="offer__timer"></span>
+      </div>
+    </section>
+
+    <!-- ── Кнопка подключения ──────────────────────────────────────── -->
+    <button id="btn-connect" class="btn btn--primary">⚡ Подключить в 1 клик</button>
+    <button id="btn-copy" class="btn btn--ghost">🔗 Скопировать ссылку-подписку</button>
+
+    <!-- ── Показатели ──────────────────────────────────────────────── -->
+    <section class="stats">
+      <div class="stat">
+        <span class="stat__value" id="devices">—</span>
+        <span class="stat__label">устройства</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value" id="traffic">—</span>
+        <span class="stat__label">ГБ за период</span>
+      </div>
+      <div class="stat">
+        <span class="stat__value" id="streak">—</span>
+        <span class="stat__label">серия 🔥</span>
+      </div>
+    </section>
+
+    <!-- ── Серия продлений ─────────────────────────────────────────── -->
+    <section id="streak-card" class="card hidden">
+      <h2 class="card__title">🔥 Серия продлений</h2>
+      <p class="card__text" id="streak-text"></p>
+      <div class="progress"><div id="streak-bar" class="progress__fill"></div></div>
+    </section>
+
+    <!-- ── Действия ────────────────────────────────────────────────── -->
+    <section class="actions">
+      <button id="btn-extend" class="action">
+        <span class="action__icon">🔄</span><span>Продлить</span>
+      </button>
+      <button id="btn-pause" class="action">
+        <span class="action__icon">⏸</span><span id="pause-label">Заморозить</span>
+      </button>
+      <button id="btn-heal" class="action">
+        <span class="action__icon">🆘</span><span>Не работает</span>
+      </button>
+      <button id="btn-ref" class="action">
+        <span class="action__icon">👥</span><span>Пригласить</span>
+      </button>
+    </section>
+
+    <!-- ── Тарифы (открывается по «Продлить») ──────────────────────── -->
+    <section id="tariffs-section" class="card hidden">
+      <h2 class="card__title">Выберите тариф</h2>
+      <div id="tariffs-list"></div>
+    </section>
+
+    <!-- ── Рефералы ────────────────────────────────────────────────── -->
+    <section id="ref-section" class="card hidden">
+      <h2 class="card__title">👥 Приглашайте друзей</h2>
+      <p class="card__text" id="ref-text"></p>
+      <div class="ref-link" id="ref-link"></div>
+      <button id="btn-share" class="btn btn--primary">📤 Поделиться</button>
+    </section>
+
+    <!-- ── Заморозка ───────────────────────────────────────────────── -->
+    <section id="pause-section" class="card hidden">
+      <h2 class="card__title">⏸ Заморозка подписки</h2>
+      <p class="card__text" id="pause-text"></p>
+      <div class="pause-options">
+        <button class="chip" data-days="7">7 дней</button>
+        <button class="chip" data-days="14">14 дней</button>
+        <button class="chip" data-days="30">30 дней</button>
+      </div>
+    </section>
+
+    <p class="footer-note">Ссылка-подписка постоянная: серверы меняются — ключ остаётся.</p>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

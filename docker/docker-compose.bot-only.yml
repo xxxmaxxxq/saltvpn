@@ -1,0 +1,41 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  ЗАПУСК ТОЛЬКО БОТА (первый шаг деплоя на VPS)
+#
+#  Что поднимается: один контейнер с ботом в режиме polling.
+#  База — файл SQLite на диске сервера (переживает перезапуски и обновления).
+#  Postgres, Redis, Marzban, домен и HTTPS НЕ нужны.
+#
+#  Что работает: весь интерфейс бота — онбординг, триал, тарифы, кабинет,
+#  заморозка, рефералы, админ-команды.
+#  Что НЕ работает: выдача реальных VPN-ключей (нужна панель Marzban с нодами
+#  — это docker-compose.yml и docs/RUNBOOK.md).
+#
+#  Запуск:
+#      docker compose -f docker/docker-compose.bot-only.yml --env-file .env up -d --build
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: salt_bot
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      # Жёстко фиксируем режим, чтобы бот не пытался достучаться
+      # до Postgres и Redis, которых на этом этапе нет
+      LOCAL_MODE: "true"
+      BOT_MODE: polling
+      SQLITE_PATH: /data/vpn_local.sqlite3
+    volumes:
+      # Именованный том: база остаётся жива при пересборке образа
+      - botdata:/data
+    command: python -m app.bot.main
+
+volumes:
+  botdata:
+    # Явное имя: один и тот же том во всех режимах запуска,
+    # поэтому база пользователей не теряется при переходе
+    # с «только бот» на «бот + сайт»
+    name: salt_bot_data

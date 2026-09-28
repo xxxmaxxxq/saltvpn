@@ -1,0 +1,40 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Hysteria 2 — резервный UDP-протокол.
+#  Нужен там, где мобильный оператор режет или шейпит TCP: Hysteria держит
+#  скорость при потерях пакетов до 30%.
+#  Плейсхолдеры {{...}} подставляет scripts/install-node.sh
+# ═══════════════════════════════════════════════════════════════════════════
+
+listen: :{{PORT}}
+
+# Маскировка под обычный сайт: кто постучится не тем клиентом — увидит чужой сайт.
+masquerade:
+  type: proxy
+  proxy:
+    url: https://{{SNI}}/
+    rewriteHost: true
+
+# Сертификат выпускается автоматически ACME (нужен домен для этой ноды)
+# либо самоподписанный, если домена нет (клиент подключается с insecure=1).
+tls:
+  cert: /etc/hysteria/cert.pem
+  key: /etc/hysteria/key.pem
+
+auth:
+  type: userpass
+  userpass: {}   # пользователей подставляет Marzban
+
+bandwidth:
+  up: 1 gbps
+  down: 1 gbps
+
+# Отключаем UDP-hop по умолчанию: некоторые провайдеры по нему детектят протокол.
+quic:
+  initStreamReceiveWindow: 8388608
+  maxStreamReceiveWindow: 8388608
+  initConnReceiveWindow: 20971520
+  maxConnReceiveWindow: 20971520
+
+# Логи трафика не ведём.
+log:
+  level: error

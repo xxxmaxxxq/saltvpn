@@ -1,0 +1,61 @@
+{
+  "_comment": "Полный конфиг Xray для ноды. ВАЖНО: логи трафика отключены (loglevel none).",
+  "log": {
+    "loglevel": "none",
+    "access": "none",
+    "error": "none"
+  },
+  "inbounds": [],
+  "outbounds": [
+    {
+      "tag": "DIRECT",
+      "protocol": "freedom",
+      "settings": { "domainStrategy": "UseIPv4" }
+    },
+    {
+      "tag": "BLOCK",
+      "protocol": "blackhole",
+      "settings": {}
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "_comment": "Блокируем приватные сети — защита от доступа к локалке ноды",
+        "type": "field",
+        "ip": ["geoip:private"],
+        "outboundTag": "BLOCK"
+      },
+      {
+        "_comment": "Блокируем BitTorrent — иначе хостер выпишет abuse и отключит сервер",
+        "type": "field",
+        "protocol": ["bittorrent"],
+        "outboundTag": "BLOCK"
+      },
+      {
+        "_comment": "Блокируем рекламу и известные майнеры",
+        "type": "field",
+        "domain": ["geosite:category-ads-all"],
+        "outboundTag": "BLOCK"
+      }
+    ]
+  },
+  "policy": {
+    "levels": {
+      "0": {
+        "handshake": 4,
+        "connIdle": 300,
+        "uplinkOnly": 2,
+        "downlinkOnly": 5,
+        "statsUserUplink": true,
+        "statsUserDownlink": true
+      }
+    },
+    "system": {
+      "statsInboundUplink": true,
+      "statsInboundDownlink": true
+    }
+  },
+  "stats": {}
+}

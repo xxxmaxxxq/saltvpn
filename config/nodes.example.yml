@@ -1,0 +1,45 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  ОПИСАНИЕ НОД И ПЛАН AUTO-HEALING
+#  Этот файл — образец. Реальные ноды хранятся в БД (таблица nodes),
+#  добавляются командой:  python -m app.cli add-node ...
+#  Здесь задаются ПУЛЫ резервов, которые использует Auto-Healing.
+# ═══════════════════════════════════════════════════════════════════════════
+
+# Пул SNI-доменов для маскировки Reality.
+# Требования к домену: TLS 1.3 + HTTP/2, не заблокирован в РФ, не CDN-заглушка.
+sni_pool:
+  nl:
+    - www.nvidia.com
+    - www.samsung.com
+    - cdn-js.deno.dev
+    - www.lovelive-anime.jp
+  ru:
+    - www.microsoft.com
+    - dl.google.com
+    - www.samsung.com
+
+# Резервные порты, на которые Auto-Healing пробует переехать.
+backup_ports: [443, 8443, 2053, 2083]
+
+# Порядок шагов восстановления. Выполняются сверху вниз до первого успеха.
+healing_plan:
+  - sni_switch          # сменить маскировочный домен
+  - port_switch         # сменить порт
+  - hysteria_promote    # сделать Hysteria2 основным протоколом локации
+  - node_failover       # увести пользователей на запасную ноду той же локации
+
+# Пример описания нод (для справки, реально живёт в БД).
+nodes:
+  - code: nl-1
+    location: nl
+    host: 203.0.113.10
+    port: 443
+    marzban_node_id: 1
+    is_primary: true
+
+  - code: ru-1
+    location: ru
+    host: 198.51.100.20
+    port: 443
+    marzban_node_id: 2
+    is_primary: true

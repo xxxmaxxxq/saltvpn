@@ -1,0 +1,138 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  ПОЛНЫЙ МАСТЕР-СЕРВЕР: бот + сайт + панель Marzban
+#
+#  Что поднимается:
+#    marzban — панель управления Xray: аккаунты, ключи, ноды
+#    bot     — Telegram-бот
+#    api     — подписки, страница импорта, Mini App
+#    caddy   — HTTPS для двух доменов сразу
+#
+#  Домены (обе A-записи ведут на этот сервер):
+#    vpn.ваш-домен   → api    (клиентам: подписки, импорт, Mini App)
+#    panel.ваш-домен → marzban (только вам: панель управления)
+#
+#  Панель вынесена на отдельный субдомен намеренно: у Marzban свои пути
+#  /api/*, и на одном домене они столкнулись бы с /api/miniapp/* сервиса.
+#
+#  Запуск:  bash scripts/deploy-master.sh
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  marzban:
+    image: gozargah/marzban:latest
+    container_name: salt_marzban
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      SUDO_USERNAME: ${MARZBAN_USERNAME}
+      SUDO_PASSWORD: ${MARZBAN_PASSWORD}
+      # Панель сама принудительно слушает localhost без SSL — снаружи
+      # её отдаёт marzban-proxy, а HTTPS терминирует Caddy
+      UVICORN_HOST: 127.0.0.1
+      UVICORN_PORT: 8000
+      XRAY_JSON: /var/lib/marzban/xray_config.json
+      XRAY_SUBSCRIPTION_URL_PREFIX: ${PUBLIC_BASE_URL}
+      SQLALCHEMY_DATABASE_URL: sqlite:////var/lib/marzban/db.sqlite3
+      # Логи трафика пользователей не ведём
+      DEBUG: "false"
+    volumes:
+      - marzban_data:/var/lib/marzban
+    # Порты наружу не пробрасываем: доступ только через Caddy по HTTPS
+    ports:
+      # Порты Xray для клиентов. 443 занят Caddy, поэтому VLESS слушает 8443
+      - "8443:8443"
+      - "8443:8443/udp"
+    networks: [salt_net]
+
+  # Marzban без SSL-сертификатов слушает только 127.0.0.1 — так задумано
+  # в самой панели. Поднимать ради внутренней связи TLS с самоподписанным
+  # сертификатом избыточно, поэтому рядом работает крошечный проброс:
+  # он живёт в сетевом пространстве панели и отдаёт её localhost на порт 8080.
+  marzban-proxy:
+    image: alpine/socat:latest
+    container_name: salt_marzban_proxy
+    restart: unless-stopped
+    network_mode: "service:marzban"
+    command: TCP-LISTEN:8080,fork,reuseaddr TCP:127.0.0.1:8000
+    depends_on: [marzban]
+
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: salt_bot
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      LOCAL_MODE: "true"
+      BOT_MODE: polling
+      SQLITE_PATH: /data/vpn_local.sqlite3
+      MARZBAN_BASE_URL: http://marzban:8080
+    volumes:
+      - botdata:/data
+    command: python -m app.bot.main
+    depends_on: [marzban]
+    networks: [salt_net]
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: salt_api
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      LOCAL_MODE: "true"
+      SQLITE_PATH: /data/vpn_local.sqlite3
+      MARZBAN_BASE_URL: http://marzban:8080
+    volumes:
+      - botdata:/data
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers
+    depends_on: [marzban]
+    networks: [salt_net]
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: salt_worker
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      LOCAL_MODE: "true"
+      SQLITE_PATH: /data/vpn_local.sqlite3
+      MARZBAN_BASE_URL: http://marzban:8080
+    volumes:
+      - botdata:/data
+    command: python -m app.workers.main
+    depends_on: [marzban]
+    networks: [salt_net]
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: salt_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${PUBLIC_BASE_URL}
+      PANEL_DOMAIN: ${PANEL_BASE_URL}
+    volumes:
+      - ./Caddyfile.master:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api, marzban, marzban-proxy]
+    networks: [salt_net]
+
+volumes:
+  botdata:
+    name: salt_bot_data
+  marzban_data:
+    name: salt_marzban_data
+  caddy_data:
+  caddy_config:
+
+networks:
+  salt_net:
+    driver: bridge

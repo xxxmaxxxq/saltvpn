@@ -1,0 +1,40 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Один образ на три процесса: api, bot, worker.
+#  Различаются только командой запуска (см. docker-compose.yml).
+# ═══════════════════════════════════════════════════════════════════════════
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    CONFIG_DIR=/config \
+    MINIAPP_DIR=/apps/client-apps/miniapp
+
+WORKDIR /app
+
+# Системные зависимости: curl нужен healthcheck'у
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Зависимости ставим отдельным слоем — пересобирается только при их изменении
+COPY apps/api-server/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Код приложения
+COPY apps/api-server/ ./
+# Конфиги (тарифы, тексты, шаблоны) и Mini App
+COPY config/ /config/
+COPY apps/client-apps/ /apps/client-apps/
+
+# Запускаемся не от root. /data — каталог для базы в режиме одного бота
+# (docker-compose.bot-only.yml монтирует туда том), права нужны заранее,
+# иначе контейнер не сможет создать файл базы.
+RUN useradd --create-home --shell /bin/bash appuser \
+    && mkdir -p /data \
+    && chown -R appuser:appuser /app /data
+USER appuser
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

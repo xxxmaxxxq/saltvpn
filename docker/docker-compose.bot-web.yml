@@ -1,0 +1,83 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  БОТ + САЙТ ПОДПИСКИ (второй шаг деплоя, нужен домен)
+#
+#  Что поднимается:
+#    bot   — Telegram-бот (polling)
+#    api   — страница импорта /i/{token}, ссылка-подписка /sub/{token},
+#            Mini App /app
+#    caddy — HTTPS с автоматическим сертификатом Let's Encrypt
+#
+#  Зачем: Telegram пускает в кнопки только https-адреса. Без домена
+#  с сертификатом кнопка «⚡ Подключить в 1 клик» не появляется —
+#  бот вынужден отдавать ссылку текстом (это и видно, когда
+#  PUBLIC_BASE_URL остаётся localhost).
+#
+#  Перед запуском в .env обязательно:
+#    PUBLIC_BASE_URL=https://ваш-домен
+#  и A-запись домена должна указывать на IP этого сервера.
+#
+#  Запуск:  bash scripts/deploy-web.sh
+# ═══════════════════════════════════════════════════════════════════════════
+
+services:
+  bot:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: salt_bot
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      LOCAL_MODE: "true"
+      BOT_MODE: polling
+      SQLITE_PATH: /data/vpn_local.sqlite3
+    volumes:
+      - botdata:/data
+    command: python -m app.bot.main
+    networks: [salt_net]
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: salt_api
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      LOCAL_MODE: "true"
+      SQLITE_PATH: /data/vpn_local.sqlite3
+    volumes:
+      # Тот же том, что у бота: база одна на оба процесса.
+      # Одновременную запись обеспечивает режим WAL (см. app/db.py)
+      - botdata:/data
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers
+    networks: [salt_net]
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: salt_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${PUBLIC_BASE_URL}
+    volumes:
+      - ./Caddyfile.web:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [api]
+    networks: [salt_net]
+
+volumes:
+  botdata:
+    # Явное имя: один и тот же том во всех режимах запуска,
+    # поэтому база пользователей не теряется при переходе
+    # с «только бот» на «бот + сайт»
+    name: salt_bot_data
+  caddy_data:
+  caddy_config:
+
+networks:
+  salt_net:
+    driver: bridge

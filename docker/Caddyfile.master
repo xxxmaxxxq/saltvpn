@@ -1,0 +1,45 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Два сайта на одном сервере:
+#    {$DOMAIN}       — клиентская часть: подписки, импорт, Mini App
+#    {$PANEL_DOMAIN} — панель Marzban, только для администратора
+#  Сертификаты Caddy выпускает и продлевает сам.
+# ═══════════════════════════════════════════════════════════════════════════
+
+{$DOMAIN} {
+    encode gzip
+
+    reverse_proxy api:8000 {
+        header_up X-Real-IP {remote_host}
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Content-Type-Options "nosniff"
+        -Server
+    }
+
+    log {
+        output file /data/access.log {
+            roll_size 10mb
+            roll_keep 3
+        }
+        format json
+    }
+}
+
+{$PANEL_DOMAIN} {
+    encode gzip
+
+    reverse_proxy marzban:8080 {
+        header_up X-Real-IP {remote_host}
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000;"
+        X-Frame-Options "DENY"
+        -Server
+    }
+
+    # Панель — административный интерфейс, в поиск ей не нужно
+    header /* X-Robots-Tag "noindex, nofollow"
+}

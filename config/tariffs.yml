@@ -1,0 +1,111 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  ТАРИФЫ, ЦЕНЫ И ЛИМИТЫ
+#  Это единственный файл, где меняются цены. Код править НЕ нужно.
+#  После изменения:  make restart
+# ═══════════════════════════════════════════════════════════════════════════
+
+currency: RUB
+
+# ── Периоды подписки и скидки ──────────────────────────────────────────────
+# price = base_price * months * (1 - discount)   (округление до рубля)
+periods:
+  - months: 1
+    discount: 0.00
+    title: "1 месяц"
+  - months: 3
+    discount: 0.10
+    title: "3 месяца"
+    badge: "−10%"
+  - months: 6
+    discount: 0.20
+    title: "6 месяцев"
+    badge: "−20%"
+  - months: 12
+    discount: 0.35
+    title: "1 год"
+    badge: "−35% 🔥"
+
+# ── Тарифные планы ─────────────────────────────────────────────────────────
+# locations — какие ноды включены в ключ (коды из таблицы nodes)
+tariffs:
+  - code: nl
+    title: "🇳🇱 Европа / Мир"
+    description: "Instagram, YouTube, ChatGPT, Twitter/X, Discord и всё остальное"
+    base_price: 149
+    locations: [nl]
+    is_default: true
+
+  - code: ru
+    title: "🇷🇺 Россия"
+    description: "Для экспатов и туристов: Госуслуги, банки, Кинопоиск, Ozon"
+    base_price: 199
+    locations: [ru]
+
+  - code: multi
+    title: "🌍 Мульти — всё включено"
+    description: "Обе локации в одном ключе, переключение прямо в приложении"
+    base_price: 249
+    locations: [nl, ru]
+    badge: "Выгодно"
+
+# ── Лимиты сервиса ─────────────────────────────────────────────────────────
+limits:
+  trial_days: 3                 # длительность бесплатного триала
+  trial_tariff: multi           # какой тариф выдаём на триал (все локации)
+  device_limit_default: 2       # одновременных устройств/IP у платного юзера
+  device_limit_trial: 1         # на триале
+  device_limit_max: 5           # потолок с учётом реферальных слотов
+  traffic_limit_gb: 0           # 0 = безлимит
+  traffic_soft_alert_gb: 500    # выше этого — алерт админу (возможный шеринг)
+
+# ── Пауза подписки ─────────────────────────────────────────────────────────
+pause:
+  enabled: true
+  max_days_per_year: 30         # суммарный лимит заморозки за календарный год
+  min_days: 1
+  max_days_at_once: 30
+  allowed_for_trial: false      # на триале заморозка недоступна
+
+# ── Streak-бонусы за продление без разрыва ─────────────────────────────────
+streak:
+  enabled: true
+  grace_hours: 24               # продлил в течение суток после истечения — серия жива
+  bonus_days_per_step: 1        # +1 день за каждое продление подряд
+  max_bonus_days: 7             # потолок бонуса
+
+# ── Реферальная программа (слоты устройств вместо денег) ───────────────────
+referral:
+  enabled: true
+  qualified_per_slot: 2         # сколько оплативших друзей = +1 слот
+  max_slots: 3                  # максимум слотов, которые можно заработать
+  invited_bonus_days: 3         # бонус приглашённому при первой оплате
+  reward_type: device_slot      # device_slot | days | balance
+
+# ── Офферы и уведомления ───────────────────────────────────────────────────
+offers:
+  # Таймер-оффер за 2 часа до конца триала
+  trial_timer:
+    enabled: true
+    hours_before_end: 2
+    discount_percent: 40
+    valid_hours: 6              # сколько живёт персональный промокод
+    applies_to_months: [1]      # скидка только на первый месяц
+
+  # Скидка в уведомлении «осталось 2 часа»
+  expire_urgent:
+    enabled: true
+    discount_percent: 15
+    valid_hours: 24
+
+  # Возврат ушедших
+  winback:
+    enabled: true
+    days_after_expire: 7
+    discount_percent: 30
+    valid_hours: 48
+
+notifications:
+  # За сколько до окончания слать напоминания (в часах)
+  before_expire_hours: [72, 24, 2]
+  send_on_expire: true
+  quiet_hours: [23, 9]          # не беспокоить с 23:00 до 09:00 по TZ
